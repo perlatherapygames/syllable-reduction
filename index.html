@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Syllable Reduction — Say Every Syllable!</title><meta name="theme-color" content="#b45309"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Say Every Syllable"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon.png"><link rel="manifest" href="manifest.json"><style>
+body{font-family:system-ui,sans-serif;background:#fffbeb;color:#451a03;margin:0;padding:18px;text-align:center}
+h1{font-size:30px;margin:8px 0 4px}.sub{font-size:19px;color:#92400e;max-width:640px;margin:0 auto}
+.stage{background:#fff;border-radius:24px;max-width:680px;margin:18px auto;padding:22px;box-shadow:0 12px 30px rgba(0,0,0,.12)}
+.pic{font-size:110px;line-height:1.1}
+.prompt{font-size:26px;font-weight:800;margin:10px 0}
+.word{font-size:42px;font-weight:800;color:#b45309}
+.syl{font-size:28px;font-weight:700;color:#92400e;margin:8px 0}
+.dots{display:flex;gap:12px;justify-content:center;margin:14px 0;flex-wrap:wrap}
+.dot{width:44px;height:44px;border-radius:50%;background:#fde68a;border:3px solid #b45309;font-size:22px;cursor:pointer;line-height:38px}
+.dot.tapped{background:#16a34a;color:#fff;border-color:#16a34a}
+button{font-size:20px;padding:14px 20px;border:0;border-radius:14px;background:#b45309;color:#fff;margin:6px;cursor:pointer}
+button.alt{background:#fef3c7;color:#451a03}
+button.go{background:#16a34a}
+button:disabled{opacity:.5}
+.feedback{font-size:24px;font-weight:800;min-height:34px}
+.small{color:#92400e;font-size:16px}
+.progress{font-size:18px;font-weight:700}
+.hidden{display:none}
+</style></head><body>
+<h1>👏 Syllable Reduction — Say Every Syllable!</h1>
+<p class="sub">Look at the picture. Say the word — <b>every</b> syllable! Tap a dot for each syllable as you say it.</p>
+<div class="stage">
+  <div class="pic" id="pic">🍎</div>
+  <div class="prompt">What is this? Say every syllable!</div>
+  <div id="reveal" class="hidden">
+    <div class="word" id="word">apple</div>
+    <div class="syl" id="syl">ap • ple</div>
+    <div class="dots" id="dots"></div>
+    <div class="feedback" id="feedback">Tap a dot for each syllable 👆</div>
+  </div>
+  <div>
+    <button id="showBtn" onclick="showWord()">👀 Show the word</button>
+    <button class="alt" onclick="hear()">🔊 Hear it</button>
+  </div>
+  <div>
+    <button class="go" id="saidBtn" onclick="saidIt()" disabled>🗣️ I said it! ⭐</button>
+  </div>
+</div>
+<div><button class="alt" onclick="prev()">⬅ Back</button><button class="alt" onclick="next()">Next ➜</button><button class="alt" onclick="shuffle()">🔀 Shuffle</button></div>
+<p class="progress" id="score"></p>
+<p class="small">Goal: produce all syllables in multisyllabic words, 90% across 3 sessions.<br>Save like an app: Safari → Share → Add to Home Screen.</p>
+<script>
+const W=[
+ ["🍎","apple","ap • ple",2],["🐯","tiger","ti • ger",2],["✏️","pencil","pen • cil",2],
+ ["🪑","table","ta • ble",2],["👶","baby","ba • by",2],["🍪","cookie","cook • ie",2],
+ ["🐶","puppy","pup • py",2],["🌸","flower","flow • er",2],["🐱","kitten","kit • ten",2],
+ ["🦁","lion","li • on",2],["🐘","elephant","el • e • phant",3],["🍌","banana","ba • na • na",3],
+ ["💻","computer","com • pu • ter",3],["🦋","butterfly","but • ter • fly",3],["🍔","hamburger","ham • bur • ger",3],
+ ["🚁","helicopter","hel • i • cop • ter",4],["🐛","caterpillar","cat • er • pil • lar",4],["🍉","watermelon","wa • ter • mel • on",4],
+ ["📞","telephone","tel • e • phone",3],["🎂","birthday","birth • day",2],["🎁","present","pres • ent",2],
+ ["🐢","turtle","tur • tle",2],["🦒","giraffe","gi • raffe",2],["🦓","zebra","ze • bra",2],
+ ["🍓","strawberry","straw • ber • ry",3],["🥒","cucumber","cu • cum • ber",3],["🍿","popcorn","pop • corn",2],
+ ["🎃","pumpkin","pump • kin",2],["🦃","turkey","tur • key",2],["🐬","dolphin","dol • phin",2],
+ ["🐧","penguin","pen • guin",2],["🦄","unicorn","u • ni • corn",3],["🌈","rainbow","rain • bow",2],
+ ["🍕","pizza","piz • za",2],["🍦","ice cream","ice • cream",2],["🧁","cupcake","cup • cake",2],
+ ["🚀","rocket","rock • et",2],["🎸","guitar","gui • tar",2],["🎹","piano","pi • an • o",3],
+ ["🍊","orange","or • ange",2],["🥕","carrot","car • rot",2],["🥦","broccoli","broc • co • li",3],
+ ["🍩","donut","do • nut",2],["🥞","pancake","pan • cake",2],["🥤","soda","so • da",2],
+ ["🍋","lemon","lem • on",2],["🐝","bumblebee","bum • ble • bee",3],["🐙","octopus","oc • to • pus",3],
+ ["🦖","dinosaur","di • no • saur",3],["🌋","volcano","vol • ca • no",3]
+];
+let i=0, stars=0, tapped=0;
+function render(){
+  document.getElementById('pic').textContent=W[i][0];
+  document.getElementById('reveal').classList.add('hidden');
+  document.getElementById('showBtn').disabled=false;
+  document.getElementById('saidBtn').disabled=true;
+  document.getElementById('feedback').textContent='Tap a dot for each syllable 👆';
+  tapped=0;
+  document.getElementById('score').textContent='⭐ Stars: '+stars+'  •  Card '+(i+1)+' of '+W.length;
+}
+function showWord(){
+  document.getElementById('word').textContent=W[i][1];
+  document.getElementById('syl').textContent=W[i][2];
+  const d=document.getElementById('dots'); d.innerHTML='';
+  for(let k=0;k<W[i][3];k++){
+    const b=document.createElement('button'); b.className='dot'; b.textContent='●';
+    b.onclick=()=>{ if(!b.classList.contains('tapped')){ b.classList.add('tapped'); tapped++; check(); } };
+    d.appendChild(b);
+  }
+  document.getElementById('reveal').classList.remove('hidden');
+  document.getElementById('showBtn').disabled=true;
+}
+function check(){
+  const n=W[i][3];
+  document.getElementById('feedback').textContent = tapped<n ? `Good! ${tapped} of ${n} syllables — keep going!` : `🎉 Yes! All ${n} syllables!`;
+  if(tapped>=n) document.getElementById('saidBtn').disabled=false;
+}
+function hear(){ try{speechSynthesis.speak(new SpeechSynthesisUtterance(W[i][1]))}catch(e){} }
+function saidIt(){ stars++; next(); }
+function next(){ i=(i+1)%W.length; render(); }
+function prev(){ i=(i-1+W.length)%W.length; render(); }
+function shuffle(){ W.sort(()=>Math.random()-.5); i=0; render(); }
+render();
+</script></body></html>
